@@ -6,11 +6,12 @@ import math, os
 import AppKit
 
 import mojo.extensions
+
 bundle = mojo.extensions.ExtensionBundle("SymmetricalRoundShapeDrawingTool")
 toolbarImagePath = os.path.join(bundle.resourcesPath(), "toolbar.pdf")
 toolbarImage = AppKit.NSImage.alloc().initWithContentsOfFile_(toolbarImagePath)
 
-class OvoidDrawerTool(BaseEventTool):
+class SymmetricalRoundShapeDrawingTool(BaseEventTool):
     
     def setup(self):
         self. minimumWidth = self.minimumHeight = 20
@@ -30,7 +31,7 @@ class OvoidDrawerTool(BaseEventTool):
         self._shiftDown = False
         self._controlDown = False
         self._circleFactor = 1-0.552284749831
-        
+
     def getToolbarIcon(self):
         return toolbarImage
         
@@ -325,7 +326,6 @@ class OvoidDrawerTool(BaseEventTool):
         return False
     
     def getToolbarTip(self):
-        return "Ovoid Drawing Tool"
+        return "Symmetrical Round Shape Drawing Tool"
 
-
-installTool(OvoidDrawerTool())
+installTool(SymmetricalRoundShapeDrawingTool())

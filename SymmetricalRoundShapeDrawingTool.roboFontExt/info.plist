@@ -9,7 +9,7 @@
 	<key>developerURL</key>
 	<string>http://letterror.com</string>
 	<key>html</key>
-	<false/>
+	<true/>
 	<key>launchAtStartUp</key>
 	<integer>1</integer>
 	<key>mainScript</key>
@@ -17,7 +17,7 @@
 	<key>name</key>
 	<string>SymmetricalRoundShapeDrawingTool</string>
 	<key>timeStamp</key>
-	<real>1589796753.3674481</real>
+	<real>1589798731.9419131</real>
 	<key>version</key>
 	<string>1.0</string>
 </dict>
