@@ -1,13 +1,9 @@
-# symmetricalRoundShapeDrawingTool
-Symmetrical Round Shape Drawing Tool for Robofont
-
-![](screen.mp4)
-
-
-
 #LettError’s Symmetric Round Shape Drawing Tool
+![shapes](shapes.png)
 
 This adds a drawing tool for symmetric round shapes to the Glyph window. You can flat sided ovals, superellipse-like shapes, octagonals.
+
+![](screen.gif)
 
 ##command key
 Drag with the command key pressed to move the tangent points to make the flats longer and shorter.
