@@ -63,11 +63,25 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self._controlDown = False
         self._circleFactor = 1-0.552284749831
 
-        self.foregroundContainer = self.extensionContainer(
+        foregroundContainer = self.extensionContainer(
             identifier="com.letterror.SymmetricalRoundShapeDrawingTool.foreground",
             location="foreground",
             clear=True
         )
+        self.dotsLayer = foregroundContainer.appendPathSublayer()
+        self.captionLayer = foregroundContainer.appendTextLineSublayer(
+            size=(400, 100),
+            font="Menlo-Regular",
+            pointSize=10,
+            fillColor=(1, 0.5, 0, 1),
+            horizontalAlignment="left"
+        )
+        self.shapeLayer = foregroundContainer.appendPathSublayer(
+            fillColor=(0, 0, 0, 0.03),
+            strokeWidth=.5,
+            strokeColor=(1, 0, 0, .4),
+        )
+
         previewContainer = self.extensionContainer(
             identifier="com.letterror.SymmetricalRoundShapeDrawingTool.preview",
             location="preview",
@@ -79,6 +93,12 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             strokeColor=(1, .4, 0, 1),
             strokeDash=(10, 20)
         )
+
+    def clearLayers(self):
+        self.dotsLayer.clearSublayers()
+        self.captionLayer.clearSublayers()
+        self.shapeLayer.clearSublayers()
+        self.previewPathLayer.clearSublayers()
 
     def getToolbarIcon(self):
         return toolbarImage
@@ -102,8 +122,8 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         else:
             self.dragState = "size"
 
-        self.updatePreviewContainer()
-        # self.updateForegroundContainer()
+        self.updatePreview()
+        self.updateForeground()
 
     def mouseDown(self, point, clickCount):
         if self.start is None:
@@ -191,8 +211,8 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self.lastPt = point.x, point.y
             self.calculate()
 
-        self.updatePreviewContainer()
-        # self.updateForegroundContainer()
+        self.updatePreview()
+        self.updateForeground()
 
     def mouseUp(self, point):
         if self._width is not None and self._height is not None:
@@ -208,8 +228,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self.lastPt = None
         self.xComp = self.yComp = 0
 
-        self.foregroundContainer.clearSublayers()
-        self.previewPathLayer.clearSublayers()
+        self.clearLayers()
 
     def addShape(self):
         # add the final shape to the glyph
@@ -234,29 +253,28 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             p.curveTo((self._b1_h, self._yMin), (self._xMin, self._b1_v), (self._xMin, self._t1_v))
             p.closePath()
 
-    def dot(self, p, s=4, scale=1, stacked=False):
-        s *= scale
+    def dot(self, p, s=4, stacked=False):
         if stacked:
             clr = (0, .5, 1, 1)
         else:
             clr = (1, .5, 0, 1)
 
         # draw a dot
-        self.foregroundContainer.appendOvalSublayer(
+        self.dotsLayer.appendOvalSublayer(
             position=(p[0]-.5*s, p[1]-.5*s),
             size=(s, s),
             fillColor=clr
         )
 
-    def updatePreviewContainer(self):
+    def updatePreview(self):
         # only draws if there are already outlines in the glyph
         if self._xMin is None:
             return
 
-        pen = self.buildShapePathWithoutScale()
+        pen = self.buildShapePath()
         pen.replay(self.previewPathLayer.getPen())
 
-    def updateForegroundContainer(self, scale):
+    def updateForeground(self):
         if not self._didCalculate:
             return
 
@@ -266,36 +284,33 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         elif self.dragState == "curves":
             bcpDot = 10
 
+        self.dotsLayer.clearSublayers()
         stackedbv = self._b1_v == self._b2_v
         stackedbh = self._b1_h == self._b2_h
         stackedtv = self._t1_v == self._t2_v
         stackedth = self._t1_h == self._t2_h
-        self.dot((self._xMin, self._t1_v), s=tanDot, scale=scale, stacked=stackedtv)
-        self.dot((self._xMax, self._t1_v), s=tanDot, scale=scale, stacked=stackedtv)
-        self.dot((self._xMin, self._t2_v), s=tanDot, scale=scale, stacked=stackedtv)
-        self.dot((self._xMax, self._t2_v), s=tanDot, scale=scale, stacked=stackedtv)
-        self.dot((self._t1_h, self._yMin), s=tanDot, scale=scale, stacked=stackedth)
-        self.dot((self._t1_h, self._yMax), s=tanDot, scale=scale, stacked=stackedth)
-        self.dot((self._t2_h, self._yMin), s=tanDot, scale=scale, stacked=stackedth)
-        self.dot((self._t2_h, self._yMax), s=tanDot, scale=scale, stacked=stackedth)
-        self.dot((self._xMin, self._b1_v), s=bcpDot, scale=scale, stacked=stackedbv)
-        self.dot((self._xMax, self._b1_v), s=bcpDot, scale=scale, stacked=stackedbv)
-        self.dot((self._xMin, self._b2_v), s=bcpDot, scale=scale, stacked=stackedbv)
-        self.dot((self._xMax, self._b2_v), s=bcpDot, scale=scale, stacked=stackedbv)
-        self.dot((self._b1_h, self._yMax), s=bcpDot, scale=scale, stacked=stackedbh)
-        self.dot((self._b2_h, self._yMax), s=bcpDot, scale=scale, stacked=stackedbh)
-        self.dot((self._b1_h, self._yMin), s=bcpDot, scale=scale, stacked=stackedbh)
-        self.dot((self._b2_h, self._yMin), s=bcpDot, scale=scale, stacked=stackedbh)
+        self.dot((self._xMin, self._t1_v), s=tanDot, stacked=stackedtv)
+        self.dot((self._xMax, self._t1_v), s=tanDot, stacked=stackedtv)
+        self.dot((self._xMin, self._t2_v), s=tanDot, stacked=stackedtv)
+        self.dot((self._xMax, self._t2_v), s=tanDot, stacked=stackedtv)
+        self.dot((self._t1_h, self._yMin), s=tanDot, stacked=stackedth)
+        self.dot((self._t1_h, self._yMax), s=tanDot, stacked=stackedth)
+        self.dot((self._t2_h, self._yMin), s=tanDot, stacked=stackedth)
+        self.dot((self._t2_h, self._yMax), s=tanDot, stacked=stackedth)
+        self.dot((self._xMin, self._b1_v), s=bcpDot, stacked=stackedbv)
+        self.dot((self._xMax, self._b1_v), s=bcpDot, stacked=stackedbv)
+        self.dot((self._xMin, self._b2_v), s=bcpDot, stacked=stackedbv)
+        self.dot((self._xMax, self._b2_v), s=bcpDot, stacked=stackedbv)
+        self.dot((self._b1_h, self._yMax), s=bcpDot, stacked=stackedbh)
+        self.dot((self._b2_h, self._yMax), s=bcpDot, stacked=stackedbh)
+        self.dot((self._b1_h, self._yMin), s=bcpDot, stacked=stackedbh)
+        self.dot((self._b2_h, self._yMin), s=bcpDot, stacked=stackedbh)
 
-        kwargs = dict(
-            fillColor=(0, 0, 0, 0.03),
-            strokeWidth=.5*scale,
-            strokeColor=(1, 0, 0, .4),
-        )
-        self.buildShapePath(scale, **kwargs)
+        pen = self.buildShapePath()
+        pen.replay(self.shapeLayer.getPen())
 
         center = .5*(self._xMax+self._xMin), .5*(self._yMax+self._yMin)
-        self.dot(center, scale=scale)
+        self.dot(center)
 
         captionComponents = [f"the symmetrical,\nround shape\ndrawing tool\npress command to move the flat\npress option to move the bcps\n\nwidth {self._width:3.3f}\nheight {self._height:3.3f}"]
         if self._orientation:
@@ -307,31 +322,11 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         elif self.dragState == "curves":
             captionComponents.append(f"\nyou're changing the bcp factor\nx %{self.bcpFactor_x:3.3f}\ny %{self.bcpFactor_y:3.3f}")
 
-        self.foregroundContainer.appendTextLineSublayer(
-            position=center,
-            size=(400, 100),
-            font="Menlo-Regular",
-            pointSize=10*scale,
-            text='\n'.join(captionComponents),
-            fillColor=(1, 0.5, 0, 1),
-            horizontalAlignment="left"
-        )
+        with self.captionLayer.propertyGroup():
+            self.captionLayer.setPosition(center)
+            self.captionLayer.setText('\n'.join(captionComponents))
 
-    def buildShapePath(self, scale, **kwargs):
-        # build the drawbot path, separated for preview and regular draw.
-        shapePathLayer = self.foregroundContainer.appendPathSublayer(**kwargs)
-        pen = shapePathLayer.getPen()
-        pen.moveTo((self._xMin, self._t2_v))
-        pen.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
-        pen.lineTo((self._t2_h, self._yMax))
-        pen.curveTo((self._b2_h, self._yMax), (self._xMax, self._b2_v), (self._xMax, self._t2_v))
-        pen.lineTo((self._xMax, self._t1_v))
-        pen.curveTo((self._xMax, self._b1_v), (self._b2_h, self._yMin), (self._t2_h, self._yMin))
-        pen.lineTo((self._t1_h, self._yMin))
-        pen.curveTo((self._b1_h, self._yMin), (self._xMin, self._b1_v), (self._xMin, self._t1_v))
-        pen.closePath()
-
-    def buildShapePathWithoutScale(self):
+    def buildShapePath(self):
         pen = RecordingPen()
         pen.moveTo((self._xMin, self._t2_v))
         pen.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
