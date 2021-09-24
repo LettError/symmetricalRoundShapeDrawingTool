@@ -1,8 +1,9 @@
-from mojo.events import BaseEventTool, EditingTool, installTool
+from mojo.events import BaseEventTool, installTool
 import mojo.drawingTools as ctx
+from mojo.roboFont import CurrentGlyph
 from mojo.UI import UpdateCurrentGlyphView
-from fontTools.pens.cocoaPen import CocoaPen
-import math, os
+import math
+import os
 import AppKit
 
 import mojo.extensions
@@ -12,7 +13,7 @@ toolbarImagePath = os.path.join(bundle.resourcesPath(), "toolbar.pdf")
 toolbarImage = AppKit.NSImage.alloc().initWithContentsOfFile_(toolbarImagePath)
 
 class SymmetricalRoundShapeDrawingTool(BaseEventTool):
-    
+
     def setup(self):
         self. minimumWidth = self.minimumHeight = 20
         self.start = None
@@ -34,7 +35,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
     def getToolbarIcon(self):
         return toolbarImage
-        
+
     def modifiersChanged(self):
         # get modifier keys
         modifiers = self.getModifiers()
@@ -54,11 +55,11 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         else:
             self.dragState = "size"
         UpdateCurrentGlyphView()
-        
+
     def mouseDown(self, point, clickCount):
         if self.start is None:
             self.start = point.x, point.y
-    
+
     def mouseDragged(self, point, delta):
         if not self.lastPt:
             self.lastPt = round(point.x), round(point.y)
@@ -72,7 +73,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         bcpExtrapolateLimit = -.5
         flatExtrapolateLimit = .5
 
-        if self.dragState in [None, 'size']: 
+        if self.dragState in [None, 'size']:
             if self.xMin is None:
                 self.xMin = round(point.x)
             if self.yMin is None:
@@ -85,10 +86,10 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self.xMax, self.yMax = round(point.x)+self.xComp, round(point.y)+self.yComp
             self.calculate()
             self.lastPt = round(point.x), round(point.y)
-        
+
         elif self.dragState == "curves":
-            dx =self.lastPt[0]-point.x
-            dy =self.lastPt[1]-point.y
+            dx = self.lastPt[0]-point.x
+            dy = self.lastPt[1]-point.y
             self.xComp += dx
             self.yComp += dy
             if dx > 0:
@@ -104,26 +105,26 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
                 self.bcpFactor_y -= dy * stepValue
                 self.bcpFactor_y = max(bcpExtrapolateLimit, min(self.bcpFactor_y, 1))
             self.lastPt = point.x, point.y
-            
+
             # snap to significant bcp factor values
             xSnapValues = [self._circleFactor, 0]
             ySnapValues = [self._circleFactor, 0]
             thr = 0.02
             for xSnap in xSnapValues:
-                v = max(self.bcpFactor_x,xSnap)-min(self.bcpFactor_x,xSnap)
-                if v <thr:
+                v = max(self.bcpFactor_x, xSnap)-min(self.bcpFactor_x, xSnap)
+                if v < thr:
                     self.bcpFactor_x = xSnap
                     break
             for ySnap in ySnapValues:
-                v = max(self.bcpFactor_y,ySnap)-min(self.bcpFactor_y,ySnap)
+                v = max(self.bcpFactor_y, ySnap)-min(self.bcpFactor_y, ySnap)
                 if v < thr:
                     self.bcpFactor_y = ySnap
                     break
             self.calculate()
 
         elif self.dragState == "flats":
-            dx =self.lastPt[0]-point.x
-            dy =self.lastPt[1]-point.y
+            dx = self.lastPt[0]-point.x
+            dy = self.lastPt[1]-point.y
             self.xComp += dx
             self.yComp += dy
             if dx > 0:
@@ -140,10 +141,10 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
                 self.flatFactor_y = max(0, min(self.flatFactor_y, 1+flatExtrapolateLimit))
             self.lastPt = point.x, point.y
             self.calculate()
-    
+
     def mouseUp(self, point):
         if self._width is not None and self._height is not None:
-            if self._width > self.minimumWidth and self._height > self.minimumHeight:        
+            if self._width > self.minimumWidth and self._height > self.minimumHeight:
                 self.addShape()
         self.xMin = None
         self.xMax = None
@@ -154,12 +155,12 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self._didCalculate = False
         self.lastPt = None
         self.xComp = self.yComp = 0
-        
+
     def addShape(self):
         # add the final shape to the glyph
         # try to clean up some of the duplicates
         def notClose(pt1x, pt1y, pt2x, pt2y):
-            d = math.hypot(pt1x-pt2x,pt1y-pt2y)
+            d = math.hypot(pt1x-pt2x, pt1y-pt2y)
             return d > 5
         g = CurrentGlyph()
         with g.undo("Add RoundShape"):
@@ -183,33 +184,34 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         ctx.save()
         ctx.stroke(None)
         if stacked:
-            ctx.fill(0,.5,1)
+            ctx.fill(0, .5, 1)
         else:
-            ctx.fill(1,.5,0)
+            ctx.fill(1, .5, 0)
         s *= scale
         ctx.oval(p[0]-.5*s, p[1]-.5*s, s, s)
         ctx.restore()
 
     def drawPreview(self, scale):
         # only draws if there are already outlines in the glyph
-        if self._xMin is None: return
+        if self._xMin is None:
+            return
         ctx.save()
-        ctx.stroke(1,.4,0)
+        ctx.stroke(1, .4, 0)
         ctx.strokeWidth(2*scale)
         ctx.lineDash(10*scale, 20*scale)
         ctx.fill(0)
         self.buildShapePath(scale)
         ctx.drawPath()
         ctx.restore()
-        
+
     def draw(self, scale):
-        if not self._didCalculate: return
-        cornerDot = bcpDot = tanDot = 4
+        if not self._didCalculate:
+            return
         if self.dragState == 'flats':
             tanDot = 10
         elif self.dragState == "curves":
             bcpDot = 10
-        
+
         stackedbv = self._b1_v == self._b2_v
         stackedbh = self._b1_h == self._b2_h
         stackedtv = self._t1_v == self._t2_v
@@ -231,16 +233,16 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self.dot((self._b1_h, self._yMin), s=bcpDot, scale=scale, stacked=stackedbh)
         self.dot((self._b2_h, self._yMin), s=bcpDot, scale=scale, stacked=stackedbh)
         ctx.save()
-        ctx.stroke(1,0,0, .4)
-        ctx.fill(0,0,0,0.03)
+        ctx.stroke(1, 0, 0, .4)
+        ctx.fill(0, 0, 0, 0.03)
         ctx.strokeWidth(.5*scale)
         self.buildShapePath(scale)
         ctx.drawPath()
-        
+
         center = .5*(self._xMax+self._xMin), .5*(self._yMax+self._yMin)
         self.dot(center, scale=scale)
         ctx.fontSize(10*scale)
-        ctx.fill(1,0.5,0)
+        ctx.fill(1, 0.5, 0)
         ctx.font("Menlo-Regular")
         ctx.stroke(None)
         t = f"the symmetrical,\nround shape\ndrawing tool\npress command to move the flat\npress option to move the bcps\n\nwidth {self._width:3.3f}\nheight {self._height:3.3f}"
@@ -272,8 +274,8 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         if self.xMin is None or self.xMax is None or self.yMin is None or self.yMax is None:
             return
         self._didCalculate = True
-        self._width = max(self.xMax,self.xMin) - min(self.xMax,self.xMin)
-        self._height = max(self.yMax,self.yMin) - min(self.yMax,self.yMin)
+        self._width = max(self.xMax, self.xMin) - min(self.xMax, self.xMin)
+        self._height = max(self.yMax, self.yMin) - min(self.yMax, self.yMin)
 
         # need different kind of constrain on shift.
         if self._shiftDown:
@@ -287,7 +289,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self._orientation = isHorizontal
             self.flatFactor_x, self.flatFactor_y = self.flatFactor_y, self.flatFactor_x
             self.bcpFactor_x, self.bcpFactor_y = self.bcpFactor_y, self.bcpFactor_x
-        
+
         if self._shiftDown:
             self._xMin = min(self.xMin, self.xMax)
             self._xMax = self._xMin + self._width
@@ -298,22 +300,22 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self._yMin = min(self.yMin, self.yMax)
             self._xMax = max(self.xMin, self.xMax)
             self._yMax = max(self.yMin, self.yMax)
-        #tangent 1, vertical
+        # tangent 1, vertical
         self._t1_v = self._yMin+.5*self._height-self.flatFactor_y*.5*self._height
-        #tangent 2, vertical
+        # tangent 2, vertical
         self._t2_v = self._yMin+.5*self._height+self.flatFactor_y*.5*self._height
 
-        #tangent 1, horizontal
+        # tangent 1, horizontal
         self._t1_h = self._xMin+.5*self._width-self.flatFactor_x*.5*self._width
-        #tangent 2, horizontal
+        # tangent 2, horizontal
         self._t2_h = self._xMin+.5*self._width+self.flatFactor_x*.5*self._width
-        #tangent 1, vertical
+        # tangent 1, vertical
         self._t1_v = self._yMin+.5*self._height-self.flatFactor_y*.5*self._height
-        #tangent 2, vertical
+        # tangent 2, vertical
         self._t2_v = self._yMin+.5*self._height+self.flatFactor_y*.5*self._height
-        #tangent 1, horizontal
+        # tangent 1, horizontal
         self._t1_h = self._xMin+.5*self._width-self.flatFactor_x*.5*self._width
-        #tangent 2, horizontal
+        # tangent 2, horizontal
         self._t2_h = self._xMin+.5*self._width+self.flatFactor_x*.5*self._width
 
         # bcps
@@ -321,11 +323,13 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self._b2_v = self._t2_v + (1-self.bcpFactor_y)*(self._yMax-self._t2_v)
         self._b1_h = self._xMin + self.bcpFactor_x * (self._t1_h-self._xMin)
         self._b2_h = self._t2_h + (1-self.bcpFactor_x) * (self._xMax-self._t2_h)
-    
+
     def canSelectWithMarque(self):
         return False
-    
+
     def getToolbarTip(self):
         return "Symmetrical Round Shape Drawing Tool"
 
-installTool(SymmetricalRoundShapeDrawingTool())
+
+if __name__ == '__main__':
+    installTool(SymmetricalRoundShapeDrawingTool())
