@@ -60,9 +60,14 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self._controlDown = False
         self._circleFactor = 1-0.552284749831
 
-        self.container = self.extensionContainer(
+        self.foregroundContainer = self.extensionContainer(
             identifier="com.letterror.SymmetricalRoundShapeDrawingTool.foreground",
             location="foreground",
+            clear=True
+        )
+        self.previewContainer = self.extensionContainer(
+            identifier="com.letterror.SymmetricalRoundShapeDrawingTool.preview",
+            location="preview",
             clear=True
         )
 
@@ -87,7 +92,9 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self.dragState = "curves"
         else:
             self.dragState = "size"
-        UpdateCurrentGlyphView()
+
+        self.updatePreviewContainer()
+        self.updateForegroundContainer()
 
     def mouseDown(self, point, clickCount):
         if self.start is None:
@@ -175,6 +182,9 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self.lastPt = point.x, point.y
             self.calculate()
 
+        self.updatePreviewContainer()
+        self.updateForegroundContainer()
+
     def mouseUp(self, point):
         if self._width is not None and self._height is not None:
             if self._width > self.minimumWidth and self._height > self.minimumHeight:
@@ -188,6 +198,9 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self._didCalculate = False
         self.lastPt = None
         self.xComp = self.yComp = 0
+
+        self.foregroundContainer.clearSublayers()
+        self.previewContainer.clearSublayers()
 
     def addShape(self):
         # add the final shape to the glyph
@@ -220,13 +233,13 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             clr = (1, .5, 0, 1)
 
         # draw a dot
-        self.container.appendOvalSublayer(
+        self.foregroundContainer.appendOvalSublayer(
             position=(p[0]-.5*s, p[1]-.5*s),
             size=(s, s),
             fillColor=clr
         )
 
-    def drawPreview(self, scale):
+    def updatePreviewContainer(self, scale):
         # only draws if there are already outlines in the glyph
         if self._xMin is None:
             return
@@ -238,10 +251,9 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         )
         self.buildShapePath(scale, **kwargs)
 
-    def draw(self, scale):
+    def updateForegroundContainer(self, scale):
         if not self._didCalculate:
             return
-        self.container.clearSublayers()
 
         bcpDot = tanDot = 4
         if self.dragState == 'flats':
@@ -290,7 +302,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         elif self.dragState == "curves":
             captionComponents.append(f"\nyou're changing the bcp factor\nx %{self.bcpFactor_x:3.3f}\ny %{self.bcpFactor_y:3.3f}")
 
-        self.container.appendTextLineSublayer(
+        self.foregroundContainer.appendTextLineSublayer(
             position=center,
             size=(400, 100),
             font="Menlo-Regular",
@@ -302,7 +314,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
     def buildShapePath(self, scale, **kwargs):
         # build the drawbot path, separated for preview and regular draw.
-        shapePathLayer = self.container.appendPathSublayer(**kwargs)
+        shapePathLayer = self.foregroundContainer.appendPathSublayer(**kwargs)
         pen = shapePathLayer.getPen()
         pen.moveTo((self._xMin, self._t2_v))
         pen.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
@@ -376,4 +388,4 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
 
 if __name__ == '__main__':
-    installTool(SymmetricalRoundShapeDrawingTool())
+    MyToolActivator(SymmetricalRoundShapeDrawingTool())
