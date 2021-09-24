@@ -1,5 +1,4 @@
 from mojo.events import BaseEventTool, installTool
-import mojo.drawingTools as ctx
 from mojo.roboFont import CurrentGlyph
 from mojo.UI import UpdateCurrentGlyphView
 import math
@@ -7,6 +6,7 @@ from mojo.extensions import ExtensionBundle
 
 bundle = ExtensionBundle("SymmetricalRoundShapeDrawingTool")
 toolbarImage = bundle.getResourceImage("toolbar")
+
 
 class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
@@ -28,6 +28,15 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self._shiftDown = False
         self._controlDown = False
         self._circleFactor = 1-0.552284749831
+
+        glyphEditor = self.getGlyphEditor()
+        self.container = glyphEditor.extensionContainer(
+            identifier="com.letterror.SymmetricalRoundShapeDrawingTool.foreground",
+            location="foreground",
+            clear=True
+        )
+        self.previewLayer = self.container.appendBaseSublayer()
+        print(self.previewLayer)
 
     def getToolbarIcon(self):
         return toolbarImage
@@ -176,33 +185,36 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             p.closePath()
 
     def dot(self, p, s=4, scale=1, stacked=False):
-        # draw a dot
-        ctx.save()
-        ctx.stroke(None)
-        if stacked:
-            ctx.fill(0, .5, 1)
-        else:
-            ctx.fill(1, .5, 0)
         s *= scale
-        ctx.oval(p[0]-.5*s, p[1]-.5*s, s, s)
-        ctx.restore()
+        if stacked:
+            fillColor = (0, .5, 1)
+        else:
+            fillColor = (1, .5, 0)
+
+        # draw a dot
+        self.previewLayer.appendOvalLayer(
+            position=(p[0]-.5*s, p[1]-.5*s),
+            size=(s, s),
+            fillColor=fillColor
+        )
 
     def drawPreview(self, scale):
         # only draws if there are already outlines in the glyph
         if self._xMin is None:
             return
-        ctx.save()
-        ctx.stroke(1, .4, 0)
-        ctx.strokeWidth(2*scale)
-        ctx.lineDash(10*scale, 20*scale)
-        ctx.fill(0)
-        self.buildShapePath(scale)
-        ctx.drawPath()
-        ctx.restore()
+        kwargs = dict(
+            fillColor=(0, 0, 0),
+            strokeWidth=2*scale,
+            strokeColor=(1, .4, 0),
+            lineDash=(10*scale, 20*scale)
+        )
+        self.buildShapePath(scale, **kwargs)
 
     def draw(self, scale):
         if not self._didCalculate:
             return
+
+        bcpDot = tanDot = 4
         if self.dragState == 'flats':
             tanDot = 10
         elif self.dragState == "curves":
@@ -228,43 +240,50 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self.dot((self._b2_h, self._yMax), s=bcpDot, scale=scale, stacked=stackedbh)
         self.dot((self._b1_h, self._yMin), s=bcpDot, scale=scale, stacked=stackedbh)
         self.dot((self._b2_h, self._yMin), s=bcpDot, scale=scale, stacked=stackedbh)
-        ctx.save()
-        ctx.stroke(1, 0, 0, .4)
-        ctx.fill(0, 0, 0, 0.03)
-        ctx.strokeWidth(.5*scale)
-        self.buildShapePath(scale)
-        ctx.drawPath()
+
+        kwargs = dict(
+            fillColor=(0, 0, 0, 0.03),
+            strokeWidth=.5*scale,
+            strokeColor=(1, 0, 0, .4),
+        )
+        self.buildShapePath(scale, **kwargs)
 
         center = .5*(self._xMax+self._xMin), .5*(self._yMax+self._yMin)
         self.dot(center, scale=scale)
-        ctx.fontSize(10*scale)
-        ctx.fill(1, 0.5, 0)
-        ctx.font("Menlo-Regular")
-        ctx.stroke(None)
-        t = f"the symmetrical,\nround shape\ndrawing tool\npress command to move the flat\npress option to move the bcps\n\nwidth {self._width:3.3f}\nheight {self._height:3.3f}"
-        if self._orientation:
-            t += "\nhorizontal"
-        else:
-            t += "\nvertical"
-        if self.dragState == "flats":
-            t += f"\n\nyou're changing the flat factor\nx {self.flatFactor_x:3.3f}\ny {self.flatFactor_y:3.3f}"
-        elif self.dragState == "curves":
-            t += f"\n\nyou're changing the bcp factor\nx %{self.bcpFactor_x:3.3f}\ny %{self.bcpFactor_y:3.3f}"
-        ctx.text(t, center)
-        ctx.restore()
 
-    def buildShapePath(self, scale):
+        captionComponents = [f"the symmetrical,\nround shape\ndrawing tool\npress command to move the flat\npress option to move the bcps\n\nwidth {self._width:3.3f}\nheight {self._height:3.3f}"]
+        if self._orientation:
+            captionComponents.append("horizontal")
+        else:
+            captionComponents.append("vertical")
+        if self.dragState == "flats":
+            captionComponents.append(f"\nyou're changing the flat factor\nx {self.flatFactor_x:3.3f}\ny {self.flatFactor_y:3.3f}")
+        elif self.dragState == "curves":
+            captionComponents.append(f"\nyou're changing the bcp factor\nx %{self.bcpFactor_x:3.3f}\ny %{self.bcpFactor_y:3.3f}")
+
+        self.previewLayer.appendTextSublayer(
+            position=center,
+            size=(400, 100),
+            font="Menlo-Regular",
+            fontSize=10*scale,
+            text='\n'.join(captionComponents),
+            fillColor=(1, 0.5, 0),
+            horizontalAlignment="left"
+        )
+
+    def buildShapePath(self, scale, **kwargs):
         # build the drawbot path, separated for preview and regular draw.
-        ctx.newPath()
-        ctx.moveTo((self._xMin, self._t2_v))
-        ctx.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
-        ctx.lineTo((self._t2_h, self._yMax))
-        ctx.curveTo((self._b2_h, self._yMax), (self._xMax, self._b2_v), (self._xMax, self._t2_v))
-        ctx.lineTo((self._xMax, self._t1_v))
-        ctx.curveTo((self._xMax, self._b1_v), (self._b2_h, self._yMin), (self._t2_h, self._yMin))
-        ctx.lineTo((self._t1_h, self._yMin))
-        ctx.curveTo((self._b1_h, self._yMin), (self._xMin, self._b1_v), (self._xMin, self._t1_v))
-        ctx.closePath()
+        shapePathLayer = self.previewLayer.appendPathSublayer(**kwargs)
+        pen = shapePathLayer.getPen()
+        pen.moveTo((self._xMin, self._t2_v))
+        pen.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
+        pen.lineTo((self._t2_h, self._yMax))
+        pen.curveTo((self._b2_h, self._yMax), (self._xMax, self._b2_v), (self._xMax, self._t2_v))
+        pen.lineTo((self._xMax, self._t1_v))
+        pen.curveTo((self._xMax, self._b1_v), (self._b2_h, self._yMin), (self._t2_h, self._yMin))
+        pen.lineTo((self._t1_h, self._yMin))
+        pen.curveTo((self._b1_h, self._yMin), (self._xMin, self._b1_v), (self._xMin, self._t1_v))
+        pen.closePath()
 
     def calculate(self):
         if self.xMin is None or self.xMax is None or self.yMin is None or self.yMax is None:
