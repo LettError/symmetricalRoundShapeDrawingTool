@@ -29,14 +29,11 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self._controlDown = False
         self._circleFactor = 1-0.552284749831
 
-        glyphEditor = self.getGlyphEditor()
-        self.container = glyphEditor.extensionContainer(
+        self.container = self.extensionContainer(
             identifier="com.letterror.SymmetricalRoundShapeDrawingTool.foreground",
             location="foreground",
             clear=True
         )
-        self.previewLayer = self.container.appendBaseSublayer()
-        print(self.previewLayer)
 
     def getToolbarIcon(self):
         return toolbarImage
@@ -187,15 +184,15 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
     def dot(self, p, s=4, scale=1, stacked=False):
         s *= scale
         if stacked:
-            fillColor = (0, .5, 1)
+            clr = (0, .5, 1, 1)
         else:
-            fillColor = (1, .5, 0)
+            clr = (1, .5, 0, 1)
 
         # draw a dot
-        self.previewLayer.appendOvalLayer(
+        self.container.appendOvalSublayer(
             position=(p[0]-.5*s, p[1]-.5*s),
             size=(s, s),
-            fillColor=fillColor
+            fillColor=clr
         )
 
     def drawPreview(self, scale):
@@ -203,9 +200,9 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         if self._xMin is None:
             return
         kwargs = dict(
-            fillColor=(0, 0, 0),
+            fillColor=(0, 0, 0, 1),
             strokeWidth=2*scale,
-            strokeColor=(1, .4, 0),
+            strokeColor=(1, .4, 0, 1),
             lineDash=(10*scale, 20*scale)
         )
         self.buildShapePath(scale, **kwargs)
@@ -213,6 +210,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
     def draw(self, scale):
         if not self._didCalculate:
             return
+        self.container.clearSublayers()
 
         bcpDot = tanDot = 4
         if self.dragState == 'flats':
@@ -261,19 +259,19 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         elif self.dragState == "curves":
             captionComponents.append(f"\nyou're changing the bcp factor\nx %{self.bcpFactor_x:3.3f}\ny %{self.bcpFactor_y:3.3f}")
 
-        self.previewLayer.appendTextSublayer(
+        self.container.appendTextLineSublayer(
             position=center,
             size=(400, 100),
             font="Menlo-Regular",
-            fontSize=10*scale,
+            pointSize=10*scale,
             text='\n'.join(captionComponents),
-            fillColor=(1, 0.5, 0),
+            fillColor=(1, 0.5, 0, 1),
             horizontalAlignment="left"
         )
 
     def buildShapePath(self, scale, **kwargs):
         # build the drawbot path, separated for preview and regular draw.
-        shapePathLayer = self.previewLayer.appendPathSublayer(**kwargs)
+        shapePathLayer = self.container.appendPathSublayer(**kwargs)
         pen = shapePathLayer.getPen()
         pen.moveTo((self._xMin, self._t2_v))
         pen.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
