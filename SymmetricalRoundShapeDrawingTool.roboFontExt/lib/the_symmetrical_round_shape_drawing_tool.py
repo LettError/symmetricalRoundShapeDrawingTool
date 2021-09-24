@@ -243,15 +243,15 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         ctx.fill(1,0.5,0)
         ctx.font("Menlo-Regular")
         ctx.stroke(None)
-        t = "the symmetrical,\nround shape\ndrawing tool\npress command to move the flat\npress option to move the bcps\n\nwidth %3.3f\nheight %3.3f"% (self._width, self._height)
+        t = f"the symmetrical,\nround shape\ndrawing tool\npress command to move the flat\npress option to move the bcps\n\nwidth {self._width:3.3f}\nheight {self._height:3.3f}"
         if self._orientation:
             t += "\nhorizontal"
         else:
             t += "\nvertical"
         if self.dragState == "flats":
-            t += "\n\nyou're changing the flat factor\nx %3.3f\ny %3.3f"% (self.flatFactor_x, self.flatFactor_y)
+            t += f"\n\nyou're changing the flat factor\nx {self.flatFactor_x:3.3f}\ny {self.flatFactor_y:3.3f}"
         elif self.dragState == "curves":
-            t += "\n\nyou're changing the bcp factor\nx %3.3f\ny %3.3f"% (self.bcpFactor_x, self.bcpFactor_y)
+            t += f"\n\nyou're changing the bcp factor\nx %{self.bcpFactor_x:3.3f}\ny %{self.bcpFactor_y:3.3f}"
         ctx.text(t, center)
         ctx.restore()
 
