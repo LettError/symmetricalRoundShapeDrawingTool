@@ -1,8 +1,11 @@
+import math
+from vanilla import FloatingWindow, CheckBox
+
+from fontTools.pens.recordingPen import RecordingPen
+
 from mojo.events import installTool, uninstallTool, getToolOrder, BaseEventTool
 from mojo.roboFont import CurrentGlyph
-import math
 from mojo.extensions import ExtensionBundle
-from vanilla import FloatingWindow, CheckBox
 from mojo.subscriber import WindowController
 
 
@@ -65,10 +68,16 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             location="foreground",
             clear=True
         )
-        self.previewContainer = self.extensionContainer(
+        previewContainer = self.extensionContainer(
             identifier="com.letterror.SymmetricalRoundShapeDrawingTool.preview",
             location="preview",
             clear=True
+        )
+        self.previewPathLayer = previewContainer.appendPathSublayer(
+            fillColor=(0, 0, 0, 1),
+            strokeWidth=2,
+            strokeColor=(1, .4, 0, 1),
+            strokeDash=(10, 20)
         )
 
     def getToolbarIcon(self):
@@ -94,7 +103,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self.dragState = "size"
 
         self.updatePreviewContainer()
-        self.updateForegroundContainer()
+        # self.updateForegroundContainer()
 
     def mouseDown(self, point, clickCount):
         if self.start is None:
@@ -183,7 +192,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self.calculate()
 
         self.updatePreviewContainer()
-        self.updateForegroundContainer()
+        # self.updateForegroundContainer()
 
     def mouseUp(self, point):
         if self._width is not None and self._height is not None:
@@ -200,7 +209,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self.xComp = self.yComp = 0
 
         self.foregroundContainer.clearSublayers()
-        self.previewContainer.clearSublayers()
+        self.previewPathLayer.clearSublayers()
 
     def addShape(self):
         # add the final shape to the glyph
@@ -239,17 +248,13 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             fillColor=clr
         )
 
-    def updatePreviewContainer(self, scale):
+    def updatePreviewContainer(self):
         # only draws if there are already outlines in the glyph
         if self._xMin is None:
             return
-        kwargs = dict(
-            fillColor=(0, 0, 0, 1),
-            strokeWidth=2*scale,
-            strokeColor=(1, .4, 0, 1),
-            lineDash=(10*scale, 20*scale)
-        )
-        self.buildShapePath(scale, **kwargs)
+
+        pen = self.buildShapePathWithoutScale()
+        pen.replay(self.previewPathLayer.getPen())
 
     def updateForegroundContainer(self, scale):
         if not self._didCalculate:
@@ -325,6 +330,19 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         pen.lineTo((self._t1_h, self._yMin))
         pen.curveTo((self._b1_h, self._yMin), (self._xMin, self._b1_v), (self._xMin, self._t1_v))
         pen.closePath()
+
+    def buildShapePathWithoutScale(self):
+        pen = RecordingPen()
+        pen.moveTo((self._xMin, self._t2_v))
+        pen.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
+        pen.lineTo((self._t2_h, self._yMax))
+        pen.curveTo((self._b2_h, self._yMax), (self._xMax, self._b2_v), (self._xMax, self._t2_v))
+        pen.lineTo((self._xMax, self._t1_v))
+        pen.curveTo((self._xMax, self._b1_v), (self._b2_h, self._yMin), (self._t2_h, self._yMin))
+        pen.lineTo((self._t1_h, self._yMin))
+        pen.curveTo((self._b1_h, self._yMin), (self._xMin, self._b1_v), (self._xMin, self._t1_v))
+        pen.closePath()
+        return pen
 
     def calculate(self):
         if self.xMin is None or self.xMax is None or self.yMin is None or self.yMax is None:
