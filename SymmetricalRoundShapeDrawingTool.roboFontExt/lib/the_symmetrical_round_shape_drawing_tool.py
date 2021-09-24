@@ -3,14 +3,10 @@ import mojo.drawingTools as ctx
 from mojo.roboFont import CurrentGlyph
 from mojo.UI import UpdateCurrentGlyphView
 import math
-import os
-import AppKit
+from mojo.extensions import ExtensionBundle
 
-import mojo.extensions
-
-bundle = mojo.extensions.ExtensionBundle("SymmetricalRoundShapeDrawingTool")
-toolbarImagePath = os.path.join(bundle.resourcesPath(), "toolbar.pdf")
-toolbarImage = AppKit.NSImage.alloc().initWithContentsOfFile_(toolbarImagePath)
+bundle = ExtensionBundle("SymmetricalRoundShapeDrawingTool")
+toolbarImage = bundle.getResourceImage("toolbar")
 
 class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
