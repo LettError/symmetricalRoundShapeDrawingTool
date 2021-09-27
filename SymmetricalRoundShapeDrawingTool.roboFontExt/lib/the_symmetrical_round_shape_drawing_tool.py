@@ -1,8 +1,6 @@
 import math
 from vanilla import FloatingWindow, CheckBox
 
-from fontTools.pens.recordingPen import RecordingPen
-
 from mojo.events import installTool, uninstallTool, getToolOrder, BaseEventTool
 from mojo.roboFont import CurrentGlyph
 from mojo.extensions import ExtensionBundle
@@ -283,8 +281,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         if self._xMin is None:
             return
 
-        pen = self.buildShapePath()
-        pen.replay(self.previewPathLayer.getPen())
+        self.buildShapePath(self.previewPathLayer.getPen())
 
     def updateForeground(self):
         if not self._didCalculate:
@@ -332,11 +329,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
                          fillColor=(0, .5, 1, 1) if stacked else (1, .5, 0, 1))
                 )
 
-        pen = self.buildShapePath()
-        pen.replay(self.shapeLayer.getPen())
-
-        center = .5*(self._xMax+self._xMin), .5*(self._yMax+self._yMin)
-        self.dot(center)
+        self.buildShapePath(self.shapeLayer.getPen())
 
         captionComponents = [f"the symmetrical,\nround shape\ndrawing tool\npress command to move the flat\npress option to move the bcps\n\nwidth {self._width:3.3f}\nheight {self._height:3.3f}"]
         if self._orientation:
@@ -352,8 +345,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             self.captionLayer.setPosition(center)
             self.captionLayer.setText('\n'.join(captionComponents))
 
-    def buildShapePath(self):
-        pen = RecordingPen()
+    def buildShapePath(self, pen):
         pen.moveTo((self._xMin, self._t2_v))
         pen.curveTo((self._xMin, self._b2_v), (self._b1_h, self._yMax), (self._t1_h, self._yMax))
         pen.lineTo((self._t2_h, self._yMax))
