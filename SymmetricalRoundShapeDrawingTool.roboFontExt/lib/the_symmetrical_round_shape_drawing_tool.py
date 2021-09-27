@@ -1,43 +1,11 @@
 import math
-from vanilla import FloatingWindow, CheckBox
-
-from mojo.events import installTool, uninstallTool, getToolOrder, BaseEventTool
+from mojo.events import BaseEventTool
 from mojo.roboFont import CurrentGlyph
 from mojo.extensions import ExtensionBundle
-from mojo.subscriber import WindowController
 
 
 bundle = ExtensionBundle("SymmetricalRoundShapeDrawingTool")
 toolbarImage = bundle.getResourceImage("toolbar")
-
-
-class MyToolActivator(WindowController):
-
-    def __init__(self, tool):
-        self.tool = tool
-        super().__init__()
-
-    def build(self):
-        self.w = FloatingWindow((123, 44), 'MyTool')
-        self.w.button = CheckBox((10, 10, -10, 24), 'activate',
-                                 value=True, callback=self.activateToolCallback)
-        # install the tool
-        installTool(self.tool)
-        self.w.open()
-
-    def activateToolCallback(self, sender):
-        # if the tool is not installed, install it
-        if sender.get():
-            installTool(self.tool)
-        # if the tool is installed, uninstall it
-        else:
-            uninstallTool(self.tool)
-
-    def destroy(self):
-        # if the tool is active, remove it
-        tools = getToolOrder()
-        if self.tool.__class__.__name__ in tools:
-            uninstallTool(self.tool)
 
 
 class SymmetricalRoundShapeDrawingTool(BaseEventTool):
@@ -414,4 +382,4 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
 
 if __name__ == '__main__':
-    MyToolActivator(SymmetricalRoundShapeDrawingTool())
+    SymmetricalRoundShapeDrawingTool()
