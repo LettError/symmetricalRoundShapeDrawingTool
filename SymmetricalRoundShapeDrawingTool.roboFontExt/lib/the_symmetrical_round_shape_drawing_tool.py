@@ -71,7 +71,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             clear=True
         )
         self.dots = foregroundContainer.appendBaseSublayer()
-        for ii in range(16):
+        for ii in range(17):
             self.dots.appendSymbolSublayer(
                 position=(0, 0),
                 imageSettings=dict(
@@ -299,6 +299,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         stackedbh = self._b1_h == self._b2_h
         stackedtv = self._t1_v == self._t2_v
         stackedth = self._t1_h == self._t2_h
+        center = .5*(self._xMax+self._xMin), .5*(self._yMax+self._yMin)
 
         dotsAttributes = [
             ((self._xMin, self._t1_v), tanDot, stackedtv),
@@ -316,7 +317,8 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             ((self._b1_h, self._yMax), bcpDot, stackedbh),
             ((self._b2_h, self._yMax), bcpDot, stackedbh),
             ((self._b1_h, self._yMin), bcpDot, stackedbh),
-            ((self._b2_h, self._yMin), bcpDot, stackedbh)
+            ((self._b2_h, self._yMin), bcpDot, stackedbh),
+            (center, bcpDot, False),   # center point!
         ]
         dotSublayers = self.dots.getSublayers()
         for index, (pos, size, stacked) in enumerate(dotsAttributes):
