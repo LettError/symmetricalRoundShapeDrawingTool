@@ -44,6 +44,8 @@ class MyToolActivator(WindowController):
 
 class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
+    BASE_DOT_SIZE = 4
+
     def setup(self):
         self. minimumWidth = self.minimumHeight = 20
         self.start = None
@@ -68,7 +70,16 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             location="foreground",
             clear=True
         )
-        self.dotsLayer = foregroundContainer.appendPathSublayer()
+        self.dots = foregroundContainer.appendBaseSublayer()
+        for ii in range(16):
+            self.dots.appendSymbolSublayer(
+                position=(0, 0),
+                imageSettings=dict(
+                    name="oval",
+                    size=(self.BASE_DOT_SIZE, self.BASE_DOT_SIZE)
+                )
+            )
+
         self.captionLayer = foregroundContainer.appendTextLineSublayer(
             size=(400, 100),
             font="Menlo-Regular",
@@ -95,10 +106,16 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         )
 
     def clearLayers(self):
-        self.dotsLayer.clearSublayers()
+        self.dots.clearSublayers()
         self.captionLayer.clearSublayers()
         self.shapeLayer.clearSublayers()
         self.previewPathLayer.clearSublayers()
+
+    def layersVisibility(self, value):
+        self.dots.setVisible(value)
+        self.captionLayer.setVisible(value)
+        self.shapeLayer.setVisible(value)
+        self.previewPathLayer.setVisible(value)
 
     def getToolbarIcon(self):
         return toolbarImage
@@ -128,6 +145,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
     def mouseDown(self, point, clickCount):
         if self.start is None:
             self.start = point.x, point.y
+        self.layersVisibility(True)
 
     def mouseDragged(self, point, delta):
         if not self.lastPt:
@@ -228,7 +246,13 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         self.lastPt = None
         self.xComp = self.yComp = 0
 
-        self.clearLayers()
+        self.layersVisibility(False)
+
+    def becomeActive(self):
+        self.layersVisibility(True)
+
+    def becomeInactive(self):
+        self.layersVisibility(False)
 
     def addShape(self):
         # add the final shape to the glyph
@@ -253,19 +277,6 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             p.curveTo((self._b1_h, self._yMin), (self._xMin, self._b1_v), (self._xMin, self._t1_v))
             p.closePath()
 
-    def dot(self, p, s=4, stacked=False):
-        if stacked:
-            clr = (0, .5, 1, 1)
-        else:
-            clr = (1, .5, 0, 1)
-
-        # draw a dot
-        self.dotsLayer.appendOvalSublayer(
-            position=(p[0]-.5*s, p[1]-.5*s),
-            size=(s, s),
-            fillColor=clr
-        )
-
     def updatePreview(self):
         # only draws if there are already outlines in the glyph
         if self._xMin is None:
@@ -278,33 +289,45 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
         if not self._didCalculate:
             return
 
-        bcpDot = tanDot = 4
+        bcpDot = tanDot = self.BASE_DOT_SIZE
         if self.dragState == 'flats':
             tanDot = 10
         elif self.dragState == "curves":
             bcpDot = 10
 
-        self.dotsLayer.clearSublayers()
         stackedbv = self._b1_v == self._b2_v
         stackedbh = self._b1_h == self._b2_h
         stackedtv = self._t1_v == self._t2_v
         stackedth = self._t1_h == self._t2_h
-        self.dot((self._xMin, self._t1_v), s=tanDot, stacked=stackedtv)
-        self.dot((self._xMax, self._t1_v), s=tanDot, stacked=stackedtv)
-        self.dot((self._xMin, self._t2_v), s=tanDot, stacked=stackedtv)
-        self.dot((self._xMax, self._t2_v), s=tanDot, stacked=stackedtv)
-        self.dot((self._t1_h, self._yMin), s=tanDot, stacked=stackedth)
-        self.dot((self._t1_h, self._yMax), s=tanDot, stacked=stackedth)
-        self.dot((self._t2_h, self._yMin), s=tanDot, stacked=stackedth)
-        self.dot((self._t2_h, self._yMax), s=tanDot, stacked=stackedth)
-        self.dot((self._xMin, self._b1_v), s=bcpDot, stacked=stackedbv)
-        self.dot((self._xMax, self._b1_v), s=bcpDot, stacked=stackedbv)
-        self.dot((self._xMin, self._b2_v), s=bcpDot, stacked=stackedbv)
-        self.dot((self._xMax, self._b2_v), s=bcpDot, stacked=stackedbv)
-        self.dot((self._b1_h, self._yMax), s=bcpDot, stacked=stackedbh)
-        self.dot((self._b2_h, self._yMax), s=bcpDot, stacked=stackedbh)
-        self.dot((self._b1_h, self._yMin), s=bcpDot, stacked=stackedbh)
-        self.dot((self._b2_h, self._yMin), s=bcpDot, stacked=stackedbh)
+
+        dotsAttributes = [
+            ((self._xMin, self._t1_v), tanDot, stackedtv),
+            ((self._xMax, self._t1_v), tanDot, stackedtv),
+            ((self._xMin, self._t2_v), tanDot, stackedtv),
+            ((self._xMax, self._t2_v), tanDot, stackedtv),
+            ((self._t1_h, self._yMin), tanDot, stackedth),
+            ((self._t1_h, self._yMax), tanDot, stackedth),
+            ((self._t2_h, self._yMin), tanDot, stackedth),
+            ((self._t2_h, self._yMax), tanDot, stackedth),
+            ((self._xMin, self._b1_v), bcpDot, stackedbv),
+            ((self._xMax, self._b1_v), bcpDot, stackedbv),
+            ((self._xMin, self._b2_v), bcpDot, stackedbv),
+            ((self._xMax, self._b2_v), bcpDot, stackedbv),
+            ((self._b1_h, self._yMax), bcpDot, stackedbh),
+            ((self._b2_h, self._yMax), bcpDot, stackedbh),
+            ((self._b1_h, self._yMin), bcpDot, stackedbh),
+            ((self._b2_h, self._yMin), bcpDot, stackedbh)
+        ]
+        dotSublayers = self.dots.getSublayers()
+        for index, (pos, size, stacked) in enumerate(dotsAttributes):
+            dot = dotSublayers[index]
+            with dot.propertyGroup():
+                dot.setPosition(pos)
+                dot.setImageSettings(
+                    dict(name='oval',
+                         size=(size, size),
+                         fillColor=(0, .5, 1, 1) if stacked else (1, .5, 0, 1))
+                )
 
         pen = self.buildShapePath()
         pen.replay(self.shapeLayer.getPen())
