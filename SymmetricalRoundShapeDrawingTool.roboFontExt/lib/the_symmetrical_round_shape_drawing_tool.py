@@ -76,7 +76,8 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
                 position=(0, 0),
                 imageSettings=dict(
                     name="oval",
-                    size=(self.BASE_DOT_SIZE, self.BASE_DOT_SIZE)
+                    size=(self.BASE_DOT_SIZE, self.BASE_DOT_SIZE),
+                    fillColor=(0, 0, 0, 0)
                 )
             )
 
