@@ -103,12 +103,7 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
             strokeColor=(1, .4, 0, 1),
             strokeDash=(10, 20)
         )
-
-    def clearLayers(self):
-        self.dots.clearSublayers()
-        self.captionLayer.clearSublayers()
-        self.shapeLayer.clearSublayers()
-        self.previewPathLayer.clearSublayers()
+        self.layersVisibility(False)
 
     def layersVisibility(self, value):
         self.dots.setVisible(value)
@@ -144,12 +139,12 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
     def mouseDown(self, point, clickCount):
         if self.start is None:
             self.start = point.x, point.y
-        self.layersVisibility(True)
 
     def mouseDragged(self, point, delta):
         if not self.lastPt:
             self.lastPt = round(point.x), round(point.y)
             return
+        self.layersVisibility(True)
 
         if self._controlDown:
             stepValue = .00025
