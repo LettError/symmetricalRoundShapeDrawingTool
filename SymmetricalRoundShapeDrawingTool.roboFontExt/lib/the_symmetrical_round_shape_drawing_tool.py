@@ -1,5 +1,5 @@
 import math
-from mojo.events import BaseEventTool
+from mojo.events import BaseEventTool, installTool
 from mojo.roboFont import CurrentGlyph
 from mojo.extensions import ExtensionBundle
 
@@ -382,4 +382,4 @@ class SymmetricalRoundShapeDrawingTool(BaseEventTool):
 
 
 if __name__ == '__main__':
-    SymmetricalRoundShapeDrawingTool()
+    installTool(SymmetricalRoundShapeDrawingTool())
