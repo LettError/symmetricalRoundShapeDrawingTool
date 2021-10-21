@@ -16,9 +16,11 @@
 	<string>the_symmetrical_round_shape_drawing_tool.py</string>
 	<key>name</key>
 	<string>SymmetricalRoundShapeDrawingTool</string>
+	<key>requiresVersionMajor</key>
+	<string>4</string>
 	<key>timeStamp</key>
-	<real>1589798731.9419131</real>
+	<real>1634196547.0859749</real>
 	<key>version</key>
-	<string>1.0</string>
+	<string>1.1</string>
 </dict>
 </plist>
